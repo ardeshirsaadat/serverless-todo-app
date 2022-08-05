@@ -18,38 +18,36 @@ export class ToDoAccess {
       private readonly todoTable = process.env.TODOS_TABLE) {
     }
   
-    async getAllToDos(): Promise<TodoItem[]> {
-        logger.log({
-            level: 'info',
-            message: 'GETTING ALL TODOs'
-            });
-  
+    async getAllToDos(userId:string): Promise<TodoItem[]> {
+        logger.info('GETTING ALL TODOs');
+
       const result = await this.docClient.query({
-        TableName: this.todoTable
-      }).promise()
+        TableName: this.todoTable,
+        KeyConditionExpression: '#userId =:i',
+        ExpressionAttributeNames: {
+          '#userId': 'userId'
+        },
+        ExpressionAttributeValues: {
+          ':i': userId
+        }
+      }).promise();
   
       const items = result.Items
       return items as TodoItem[]
     }
   
     async createToDo(todo: TodoItem): Promise<TodoItem> {
-        logger.log({
-            level: 'info',
-            message: 'CREATING A TODO'
-          });
+        logger.info('CREATING A TODO');
       await this.docClient.put({
         TableName: this.todoTable,
-        Item: todo
+        Item: {...todo}
       }).promise()
   
       return todo
     }
 
     async updateToDo(userId: string, todoId: string, updatedTodo: TodoUpdate) {
-        logger.log({
-            level: 'info',
-            message: 'UPDATING A TODO'
-          });
+        logger.info('UPDATING A TODO');
         const updtedTodo = await this.docClient.update({
             TableName: this.todoTable,
             Key: { userId, todoId },
@@ -65,6 +63,20 @@ export class ToDoAccess {
         .promise();
       return { Updated: updtedTodo };
     }
+
+    async deleteTodo(todoId: string, userId: string) {
+        logger.info('DELETING A TODO');
+    
+        await this.docClient.delete({
+          TableName: this.todoTable,
+          Key: {
+            userId: userId,
+            todoId: todoId
+          }
+        }).promise();
+    
+        
+      }
 
 
 
